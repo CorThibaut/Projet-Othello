@@ -1,11 +1,8 @@
 import sys
 import socket
 import json
-import random
-#from othello import next
 
-serverAddress=('127.0.0.1',3000)
-
+serverAddress=('localhost',3000)
 
 def SendToServer(port, req):
     s = socket.socket()
@@ -13,26 +10,28 @@ def SendToServer(port, req):
     s.connect(serverAddress)
     req = json.dumps(req).encode('utf8')
     s.send(req)
+    print(type(port),"1")
 
 def Identity():
-    myPort = 3088
-    myName = "Co"
+    MyPort = 3088
+    MyName = "Co"
     args = sys.argv[1:]
     for arg in args:
         if arg.startswith('name='):
-            myName = arg[len('name='):]
+            MyName = arg[len('name='):]
         else:
-            myPort = int(arg)
-    return myPort, myName
+            MyPort = int(arg)
+            #print(type(MyPort))
+    return MyPort, MyName
 
-def subscribe(myPort,myName):
+def Subscribe(MyPort,MyName):
     req = {
         "request": "subscribe",
-        "port": myPort,
-        "name": myName,
+        "port": MyPort,
+        "name": MyName,
         "matricules": ["195038","123456"]
     }
-    SendToServer(myPort, req)
+    SendToServer(MyPort, req)
 
 def ProcessRequest(request, client, port):
     if request["request"]=="ping":
@@ -45,17 +44,17 @@ def ProcessRequest(request, client, port):
 def ListenRequest(port):
     while True:
         finished=False
-        reque = ""
-        with socket.socket() as s:
-            s.bind(('localhost', port))
-            s.listen()
+        request = ""
+        print(type(port),"2")
+        with socket.socket() as a:
+            a.bind(('localhost',port))
+            a.listen()
             while not finished:
-                client, address = s.accept()
+                client, address = a.accept()
                 request = json.loads(client.recv(4096).decode('utf8'))
                 print(request)
                 finished = ProcessRequest(request, client, port)
 
-
-def start(myName,myPort):
-    subscribe(myName, myPort)
-    ListenRequest(myPort)
+def start(MyPort,MyName):
+    Subscribe(MyPort, MyName)
+    ListenRequest(MyPort)
