@@ -2,6 +2,7 @@ import sys
 import socket
 import json
 
+
 serverAddress=('localhost',3000)
 
 def SendToServer(port, req):
@@ -10,26 +11,27 @@ def SendToServer(port, req):
     s.connect(serverAddress)
     req = json.dumps(req).encode('utf8')
     s.send(req)
-    print(type(port),"1")
 
 def Identity():
     MyPort = 3088
     MyName = "Co"
+    MyMatricule = "195038"
     args = sys.argv[1:]
     for arg in args:
         if arg.startswith('name='):
             MyName = arg[len('name='):]
+        elif arg.startswith('matricule='):
+            MyMatricule = arg[len('matricule='):]
         else:
             MyPort = int(arg)
-            #print(type(MyPort))
-    return MyPort, MyName
+    return MyPort, MyName, MyMatricule
 
-def Subscribe(MyPort,MyName):
+def Subscribe(MyPort,MyName,MyMatricules):
     req = {
         "request": "subscribe",
         "port": MyPort,
         "name": MyName,
-        "matricules": ["195038","123456"]
+        "matricules": [MyMatricules]
     }
     SendToServer(MyPort, req)
 
@@ -45,7 +47,6 @@ def ListenRequest(port):
     while True:
         finished=False
         request = ""
-        print(type(port),"2")
         with socket.socket() as a:
             a.bind(('localhost',port))
             a.listen()
@@ -55,6 +56,11 @@ def ListenRequest(port):
                 print(request)
                 finished = ProcessRequest(request, client, port)
 
-def start(MyPort,MyName):
-    Subscribe(MyPort, MyName)
+def start(MyPort,MyName, MyMatricules):
+    Subscribe(MyPort, MyName , MyMatricules)
     ListenRequest(MyPort)
+
+if __name__ == "__main__":
+    
+    start(*Identity())
+
