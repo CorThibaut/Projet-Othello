@@ -5,7 +5,7 @@ from IA_Game import next
 
 serverAddress=('localhost',3000)
 
-def Identity():
+def Id():
     MyPort = 3088
     MyName = "Co"
     MyMatricule = "195038"
@@ -72,4 +72,4 @@ def start(MyPort,MyName, MyMatricules):
     ListenRequest(MyPort)
 
 if __name__ == "__main__":
-    start(*Identity())
+    start(*Id())
