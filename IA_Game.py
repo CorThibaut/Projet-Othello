@@ -1,10 +1,20 @@
 import random
 import copy 
-
+from unittest import removeResult
 ###############################################################################
 
-request = {'request': 'play', 'lives': 3, 'errors': [], 'state': {'players': ['Co', 'Coco'], 'current': 0, 'board': [[28, 35], [27, 
-36]]}}
+request = {'request': 'play',
+ 'lives': 3,
+ 'errors': [],
+ 'state': {
+      'players': ['Co', 'stupid'],
+      'current': 0,
+      'board': [
+            [28, 36, 35, 43, 19, 51, 33, 42, 11, 25, 18, 52, 44, 45, 10, 50, 53, 26, 17, 55, 37, 46, 7, 15, 23, 31, 39, 47],
+            [5, 3, 4, 2, 29, 61, 58, 59, 60, 30, 21, 12, 38, 0, 1, 56, 57, 63, 62, 22, 48, 32, 40, 8, 16, 24, 6, 20, 27, 13, 41, 34]
+        ]
+    }
+}
 
 board = [
       0,  1,  2,  3,  4,  5,  6,  7,
@@ -17,7 +27,7 @@ board = [
      56, 57, 58, 59, 60, 61, 62, 63
 ]
 
-weight = [
+pos_weight = [
     120, -20,  20,   5,   5,  20, -20, 120,
     -20, -40,  -5,  -5,  -5,  -5, -40, -20,
     20,  -5,   15,   3,   3,  15,  -5,  20,
@@ -40,31 +50,7 @@ directions = [
 ]
 
 #############################################################################
-
-def PlayerColor(state):
-    color = None
-    if state['current']== 0:
-        color = 'black'
-    elif state['current']== 1:
-        color = 'white'
-    else:
-        return ValueError 
-    return color
-
-def PlayersTiles(state,color) :
-    opponent = None
-    me = None
-    if color == 'black':
-        me = state['board'][0]
-        opponent = state['board'][1]
-    elif color == 'white':
-        me = state['board'][1]
-        opponent = state['board'][0]
-    else:
-        return TypeError
-    return me,opponent
-
-#########################game.py###########################
+#############################################################################
 
 class GameEnd(Exception):
 	def __init__(self, lastState):
@@ -109,9 +95,6 @@ class GameLoop(GameDraw):
 class BadGameInit(Exception):
 	pass
 
-#######################################################################################
-
-from unittest import removeResult
 
 def add(p1, p2):
     l1, c1 = p1
@@ -188,17 +171,161 @@ def possibleMoves(state):
             res.append(move)
         except BadMove:
             pass
+    
     return res
 
+def ApplyMove(state, move):
+    newState = copy.deepcopy(state)
+    playerIndex = state['current']
+    otherIndex = (playerIndex+1)%2
+
+    if len(possibleMoves(state)) > 0 and move is None:
+        raise BadMove('You cannot pass your turn if there are possible moves')
+
+    if move is not None:
+        cases = willBeTaken(state, move)
+
+        newState['board'][playerIndex].append(move)
+
+        for case in cases:
+            newState['board'][otherIndex].remove(case)
+            newState['board'][playerIndex].append(case)
+            
+    newState['current'] = otherIndex
+
+    #if isGameOver(newState):
+    #    if len(newState['board'][playerIndex]) > len(newState['board'][otherIndex]):
+    #        winner = playerIndex
+    #    elif len(newState['board'][playerIndex]) < len(newState['board'][otherIndex]):
+    #            winner = otherIndex
+    #    else:
+    #        raise GameDraw(newState)
+    #    raise GameWin(winner, newState)
+        
+    return newState
+
+#################################################################################
+#################################################################################
+
+def PlayerColor(state):
+    color = None
+    if state['current']== 0:
+        color = 'black'
+    elif state['current']== 1:
+        color = 'white'
+    else:
+        return ValueError 
+    return color
+
+def OpponentColor(state):
+    if state['current']== 0:
+        return 'white'
+    if state['current']== 1:
+        return 'black'
+    else:
+        return ValueError
+
+def PlayersTiles(state) :
+    color = PlayerColor(state)
+    opponent = None
+    me = None
+    if color == 'black':
+        me = state['board'][0]
+        opponent = state['board'][1]
+    elif color == 'white':
+        me = state['board'][1]
+        opponent = state['board'][0]
+    else:
+        return TypeError
+    return me, opponent
+
+def MoveValue(state):
+    move = possibleMoves(state)
+    value = []
+    for elem in move:
+        value.append(pos_weight[elem])
+    return value
+
+def GetMax(state):
+    value = MoveValue(state)
+    if len(value) == 0:
+        return None
+    return max(value)
+
+def FindMax(state):
+    maxvalue = GetMax(state)
+    value = MoveValue(state)
+    move = possibleMoves(state)
+    res = []
+    s=0
+    if GetMax(state) == None:
+        return None
+    for elem in value:
+        if elem == maxvalue:
+            res.append(move[s])
+        s +=1
+    return res
+
+def winner(state):
+    me ,opponent = PlayersTiles(state)
+    if len(me) > len(opponent):
+        return state['current']
+    elif len(me) < len(opponent):
+        if state['current'] == 0:
+            return 1
+        elif state['current'] ==1:
+            return 0
+    else:
+        return None
+
+def heuristic(state):
+    player = state["current"]
+    me ,opponent = PlayersTiles(state)
+    if isGameOver(state):
+        theWinner = winner(state)
+        if theWinner == player:
+            return 100
+        return -100
+    res = len(me) - len(opponent)
+    return res
+
+def NegamaxWithPruningLimitedDepth(state, depth=3, alpha=float('-inf'), beta=float('+inf')):
+    if isGameOver(state) or depth==0:
+        return -heuristic(state), None
+    theValue, theMove = float('-inf'), None
+    if FindMax(state) == None:
+        return -theValue, None
+    for move in FindMax(state):
+        mov = move
+        newState = ApplyMove(state, mov)
+        value, _ = NegamaxWithPruningLimitedDepth(newState, depth-1, -beta, -alpha)
+        if value > theValue:
+            theValue, theMove = value, mov
+        alpha = max(alpha, theValue)
+        if alpha >= beta:
+            break
+    return -theValue, theMove
+
+#def next(state):
+#    res = FindMax(state)
+#    move = random.choice(res)
+#    return move
+
 def next(state):
-    res = possibleMoves(state)
-    move = random.choice(res)
+    _, move = NegamaxWithPruningLimitedDepth(state)
     return move
 
-#if __name__ == "__main__":
-print(PlayerColor(request['state']))
-print(PlayersTiles(request['state'], PlayerColor(request['state'])))
 
-print(possibleMoves(request['state']))
 
-print(next(request['state']))
+if __name__ == "__main__":
+   #print(PlayerColor(request['state']))
+   #print(OpponentColor(request['state']))
+   #print(PlayersTiles(request['state']))
+   #print(winner(request['state']))
+   
+   #print(possibleMoves(request['state']))
+   #print(MoveValue(request['state']))
+   #print(GetMax(request['state']))
+   #print(FindMax(request['state']))
+
+   print(next(request['state']))
