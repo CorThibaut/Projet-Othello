@@ -8,8 +8,8 @@ dans le terminal, utiliser la commande:
 `python connect.py name=<name> matricule=<matricule> <port>`
 
 ### Stratégie
-IA utilisant un algoruthme de type Negamax avec Pruning et profondeur limitée:
-A chaque itération, choisi une valeur dans la liste des coups possibles apportant les cases les plus intéressantes, les coins êttant les cases les plus importantes. L'heuristique construit la différence du nombre de cases possédées par les joueurs.
+IA utilisant un algorithme de type Negamax avec Pruning et profondeur limitée:
+A chaque itération, choisi un  dans la liste des coups possibles apportant les cases les plus intéressantes, les coins êtant les cases les plus importantes. L'heuristique construit la différence du nombre de cases possédées par les joueurs.
 
 ### Bibliothèques utilisées
 json,
