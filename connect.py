@@ -3,12 +3,12 @@ import socket
 import json
 from IA_Game import next
 
-serverAddress=('localhost',3000)
+serverAddress=('localhost',3000)  #adresse du serveur
 
-def Id():
-    MyPort = 3088
-    MyName = "Co"
-    MyMatricule = "195038"
+def Id():                         # permet de changer le nom, port et matricule en ajoutant des arguments à la commande pour lancé les communications avec le serveur
+    MyPort = 3088            #valeur par défaut
+    MyName = "Co"            #valeur par défaut
+    MyMatricule = "195038"   #valeur par défaut
     args = sys.argv[1:]
     for arg in args:
         if arg.startswith('name='):
@@ -19,14 +19,14 @@ def Id():
             MyPort = int(arg)
     return MyPort, MyName, MyMatricule
 
-def SendToServer(port, req):
+def SendToServer(port, req):    # envoi les requetes aux serveur     
     s = socket.socket()
     s.bind(('localhost', port))
     s.connect(serverAddress)
     req = json.dumps(req).encode('utf8')
     s.send(req)
 
-def Subscribe(MyPort,MyName,MyMatricules):
+def Subscribe(MyPort,MyName,MyMatricules):   # requete speciale pour se connecter au serveur
     req = {
         "request": "subscribe",
         "port": MyPort,
@@ -35,7 +35,7 @@ def Subscribe(MyPort,MyName,MyMatricules):
     }
     SendToServer(MyPort, req)
 
-def ListenRequest(port):
+def ListenRequest(port):              # ecoute les requetes du serveur
     while True:
         finished=False
         request = ""
@@ -48,7 +48,7 @@ def ListenRequest(port):
                 print(request)
                 finished = ProcessRequest(request, client, port)
 
-def ProcessRequest(request, client, port):
+def ProcessRequest(request, client, port):    # traite les requetes du serveur
     if request["request"]=="ping":
         reponse = {"response": "pong"}
         req= json.dumps(reponse).encode('utf8')
@@ -67,7 +67,7 @@ def ProcessRequest(request, client, port):
         return False
     return True
 
-def start(MyPort,MyName, MyMatricules):
+def start(MyPort,MyName, MyMatricules):          # lance le programme
     Subscribe(MyPort, MyName , MyMatricules)
     ListenRequest(MyPort)
 

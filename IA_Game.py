@@ -2,20 +2,10 @@ import random
 import copy 
 from unittest import removeResult
 ###############################################################################
+#request exemple pour faire des tests
+request = {'request': 'play', 'lives': 3, 'errors': [], 'state': {'players': ['Co', 'stupid'], 'current': 0, 'board': [[28, 35], [27, 36]]}}
 
-request = {'request': 'play',
- 'lives': 3,
- 'errors': [],
- 'state': {
-      'players': ['Co', 'stupid'],
-      'current': 0,
-      'board': [
-            [28, 36, 35, 43, 19, 51, 33, 42, 11, 25, 18, 52, 44, 45, 10, 50, 53, 26, 17, 55, 37, 46, 7, 15, 23, 31, 39, 47],
-            [5, 3, 4, 2, 29, 61, 58, 59, 60, 30, 21, 12, 38, 0, 1, 56, 57, 63, 62, 22, 48, 32, 40, 8, 16, 24, 6, 20, 27, 13, 41, 34]
-        ]
-    }
-}
-
+#plateau de jeu
 board = [
       0,  1,  2,  3,  4,  5,  6,  7,
       8,  9, 10, 11, 12, 13, 14, 15,
@@ -27,6 +17,7 @@ board = [
      56, 57, 58, 59, 60, 61, 62, 63
 ]
 
+#plateau des valeurs des cases (trouvé sur internet)
 pos_weight = [
     120, -20,  20,   5,   5,  20, -20, 120,
     -20, -40,  -5,  -5,  -5,  -5, -40, -20,
@@ -51,6 +42,7 @@ directions = [
 
 #############################################################################
 #############################################################################
+#  code importé de https://github.com/qlurkin/PI2CChampionshipRunner/tree/main/games/othello
 
 class GameEnd(Exception):
 	def __init__(self, lastState):
@@ -193,21 +185,13 @@ def ApplyMove(state, move):
             
     newState['current'] = otherIndex
 
-    #if isGameOver(newState):
-    #    if len(newState['board'][playerIndex]) > len(newState['board'][otherIndex]):
-    #        winner = playerIndex
-    #    elif len(newState['board'][playerIndex]) < len(newState['board'][otherIndex]):
-    #            winner = otherIndex
-    #    else:
-    #        raise GameDraw(newState)
-    #    raise GameWin(winner, newState)
         
     return newState
 
 #################################################################################
 #################################################################################
 
-def PlayerColor(state):
+def IAColor(state):                  # détermine la couleur de l' IA
     color = None
     if state['current']== 0:
         color = 'black'
@@ -217,7 +201,7 @@ def PlayerColor(state):
         return ValueError 
     return color
 
-def OpponentColor(state):
+def OpponentColor(state):             # détermine la couleur de l'adversaire
     if state['current']== 0:
         return 'white'
     if state['current']== 1:
@@ -225,8 +209,8 @@ def OpponentColor(state):
     else:
         return ValueError
 
-def PlayersTiles(state) :
-    color = PlayerColor(state)
+def IATiles(state) :                 # détermine les cases de l'IA et celle de l'adversaire (IA,Opponent)
+    color = IAColor(state)
     opponent = None
     me = None
     if color == 'black':
@@ -239,20 +223,20 @@ def PlayersTiles(state) :
         return TypeError
     return me, opponent
 
-def MoveValue(state):
-    move = possibleMoves(state)
+def MoveValue(state):                # renvoi la valeur des cases jouables
+    move = possibleMoves(state)      #voir pos_weight
     value = []
     for elem in move:
         value.append(pos_weight[elem])
     return value
 
-def GetMax(state):
+def GetMax(state):                   # renvoi la valeur maximale des cases jouables
     value = MoveValue(state)
     if len(value) == 0:
         return None
     return max(value)
 
-def FindMax(state):
+def FindMax(state):                  # renvoi la case jouable associée au maximum
     maxvalue = GetMax(state)
     value = MoveValue(state)
     move = possibleMoves(state)
@@ -266,8 +250,8 @@ def FindMax(state):
         s +=1
     return res
 
-def winner(state):
-    me ,opponent = PlayersTiles(state)
+def Winner(state):                   # renvoi qui gagne l' état du jeu
+    me ,opponent = IATiles(state)
     if len(me) > len(opponent):
         return state['current']
     elif len(me) < len(opponent):
@@ -278,54 +262,53 @@ def winner(state):
     else:
         return None
 
-def heuristic(state):
+def Heuristic(state):               # heuristique (ecart de point (nombre de case) entre les joueurs)
     player = state["current"]
-    me ,opponent = PlayersTiles(state)
+    me ,opponent = IATiles(state)
     if isGameOver(state):
-        theWinner = winner(state)
+        theWinner = Winner(state)
         if theWinner == player:
             return 100
         return -100
     res = len(me) - len(opponent)
     return res
 
-def NegamaxWithPruningLimitedDepth(state, depth=3, alpha=float('-inf'), beta=float('+inf')):
+def NegamaxWithPruningLimitedDepth(state, player, depth=4, alpha=float('-inf'), beta=float('+inf')):
     if isGameOver(state) or depth==0:
-        return -heuristic(state), None
+        return -Heuristic(state), None
     theValue, theMove = float('-inf'), None
+    
     if FindMax(state) == None:
-        return -theValue, None
-    for move in FindMax(state):
-        mov = move
-        newState = ApplyMove(state, mov)
-        value, _ = NegamaxWithPruningLimitedDepth(newState, depth-1, -beta, -alpha)
-        if value > theValue:
-            theValue, theMove = value, mov
-        alpha = max(alpha, theValue)
-        if alpha >= beta:
-            break
+        return -Heuristic(state), None
+    
+    if depth<=2:
+        for move in FindMax(state):
+            newState = ApplyMove(state, move)
+            value, _ = NegamaxWithPruningLimitedDepth(newState,player%2+1, depth-1, -beta, -alpha)
+            if value > theValue:
+                theValue, theMove = value, move
+            alpha = max(alpha, theValue)
+            if alpha >= beta:
+                break
+    if depth >=3:
+        for move in possibleMoves(state):
+            newState = ApplyMove(state, move)
+            value, _ = NegamaxWithPruningLimitedDepth(newState,player%2+1, depth-1, -beta, -alpha)
+            if value > theValue:
+                theValue, theMove = value, move
+            alpha = max(alpha, theValue)
+            if alpha >= beta:
+                break
     return -theValue, theMove
 
-#def next(state):
-#    res = FindMax(state)
-#    move = random.choice(res)
-#    return move
 
-def next(state):
-    _, move = NegamaxWithPruningLimitedDepth(state)
+def next(state):                                #renvoi le coup de l'IA
+    player = state['current']
+    _, move = NegamaxWithPruningLimitedDepth(state,player)
     return move
 
 
 
 if __name__ == "__main__":
-   #print(PlayerColor(request['state']))
-   #print(OpponentColor(request['state']))
-   #print(PlayersTiles(request['state']))
-   #print(winner(request['state']))
-   
-   #print(possibleMoves(request['state']))
-   #print(MoveValue(request['state']))
-   #print(GetMax(request['state']))
-   #print(FindMax(request['state']))
 
    print(next(request['state']))
