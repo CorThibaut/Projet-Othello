@@ -21,7 +21,7 @@ def Id():                         # permet de changer le nom, port et matricule 
 
 def SendToServer(port, req):    # envoi les requetes aux serveur     
     s = socket.socket()
-    s.bind(('localhost', port))
+    s.bind(('0.0.0.0', port))
     s.connect(serverAddress)
     req = json.dumps(req).encode('utf8')
     s.send(req)
@@ -40,7 +40,7 @@ def ListenRequest(port):              # ecoute les requetes du serveur
         finished=False
         request = ""
         with socket.socket() as a:
-            a.bind(('localhost',port))
+            a.bind(('0.0.0.0',port))
             a.listen()
             while not finished:
                 client, address = a.accept()

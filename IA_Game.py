@@ -206,8 +206,7 @@ def OpponentColor(state):             # détermine la couleur de l'adversaire
         return 'white'
     if state['current']== 1:
         return 'black'
-    else:
-        return ValueError
+
 
 def IATiles(state) :                 # détermine les cases de l'IA et celle de l'adversaire (IA,Opponent)
     color = IAColor(state)
@@ -219,8 +218,7 @@ def IATiles(state) :                 # détermine les cases de l'IA et celle de 
     elif color == 'white':
         me = state['board'][1]
         opponent = state['board'][0]
-    else:
-        return TypeError
+
     return me, opponent
 
 def MoveValue(state):                # renvoi la valeur des cases jouables
